@@ -6,8 +6,8 @@
   <title>IoT Estoque</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
   <style>
-    /* ── Reset & Vars ────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
@@ -21,6 +21,8 @@
       --text-dim:  #6b6b8a;
       --entrada:   #00ff94;
       --saida:     #ff6b35;
+      --blue:      #4d9eff;
+      --purple:    #a855f7;
       --font-mono: 'Space Mono', monospace;
       --font-sans: 'Syne', sans-serif;
       --radius:    4px;
@@ -37,7 +39,6 @@
       overflow-x: hidden;
     }
 
-    /* ── Grid noise texture overlay ─────────────────────── */
     body::before {
       content: '';
       position: fixed;
@@ -51,441 +52,279 @@
 
     /* ── Header ──────────────────────────────────────────── */
     header {
-      position: sticky;
-      top: 0;
-      z-index: 100;
+      position: sticky; top: 0; z-index: 100;
       background: rgba(10,10,15,0.85);
       backdrop-filter: blur(12px);
       border-bottom: 1px solid var(--border);
-      padding: 0 2rem;
-      height: 64px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 1rem;
+      padding: 0 2rem; height: 64px;
+      display: flex; align-items: center; justify-content: space-between; gap: 1rem;
     }
 
-    .logo {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-    }
+    .logo { display: flex; align-items: center; gap: 0.75rem; }
 
     .logo-icon {
-      width: 32px;
-      height: 32px;
-      border: 2px solid var(--accent);
-      border-radius: var(--radius);
-      display: grid;
-      place-items: center;
+      width: 32px; height: 32px;
+      border: 2px solid var(--accent); border-radius: var(--radius);
+      display: grid; place-items: center;
       box-shadow: var(--glow);
     }
 
     .logo-icon svg { width: 18px; height: 18px; }
 
     .logo-text {
-      font-family: var(--font-sans);
-      font-weight: 800;
-      font-size: 1.1rem;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
+      font-family: var(--font-sans); font-weight: 800;
+      font-size: 1.1rem; letter-spacing: 0.08em; text-transform: uppercase;
     }
-
     .logo-text span { color: var(--accent); }
 
-    .header-right {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-    }
+    .header-right { display: flex; align-items: center; gap: 1rem; }
 
     .status-dot {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      font-family: var(--font-mono);
-      font-size: 0.7rem;
-      color: var(--text-dim);
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
+      display: flex; align-items: center; gap: 0.5rem;
+      font-family: var(--font-mono); font-size: 0.7rem;
+      color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.1em;
     }
 
-    .dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--muted);
-      transition: background 0.3s;
-    }
-
-    .dot.online { background: var(--accent); box-shadow: 0 0 8px var(--accent); animation: pulse 2s infinite; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); transition: background 0.3s; }
+    .dot.online  { background: var(--accent); box-shadow: 0 0 8px var(--accent); animation: pulse 2s infinite; }
     .dot.offline { background: var(--saida); }
 
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.4; }
+    @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+
+    .btn {
+      background: transparent; border: 1px solid var(--border);
+      color: var(--text-dim); padding: 0.4rem 0.9rem; border-radius: var(--radius);
+      font-family: var(--font-mono); font-size: 0.7rem; text-transform: uppercase;
+      letter-spacing: 0.1em; cursor: pointer; transition: all 0.2s;
+      display: flex; align-items: center; gap: 0.4rem;
     }
-
-    .btn-refresh {
-      background: transparent;
-      border: 1px solid var(--border);
-      color: var(--text-dim);
-      padding: 0.4rem 0.9rem;
-      border-radius: var(--radius);
-      font-family: var(--font-mono);
-      font-size: 0.7rem;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      cursor: pointer;
-      transition: all 0.2s;
-      display: flex;
-      align-items: center;
-      gap: 0.4rem;
-    }
-
-    .btn-refresh:hover {
-      border-color: var(--accent);
-      color: var(--accent);
-      box-shadow: var(--glow);
-    }
-
-    .btn-refresh.loading svg { animation: spin 0.8s linear infinite; }
-
+    .btn:hover { border-color: var(--accent); color: var(--accent); box-shadow: var(--glow); }
+    .btn.loading svg { animation: spin 0.8s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ── Main layout ─────────────────────────────────────── */
-    main {
-      position: relative;
-      z-index: 1;
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 2.5rem 2rem;
+    /* ── Nav tabs ─────────────────────────────────────────── */
+    .nav-tabs {
+      display: flex; gap: 0.25rem;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 3px;
     }
 
-    /* ── Stats bar ───────────────────────────────────────── */
+    .nav-tab {
+      background: transparent; border: none;
+      color: var(--text-dim); padding: 0.35rem 0.9rem;
+      border-radius: 3px; font-family: var(--font-mono);
+      font-size: 0.68rem; text-transform: uppercase;
+      letter-spacing: 0.08em; cursor: pointer; transition: all 0.2s;
+    }
+    .nav-tab.active { background: var(--accent); color: #000; font-weight: 700; }
+    .nav-tab:not(.active):hover { color: var(--text); }
+
+    /* ── Main ─────────────────────────────────────────────── */
+    main { position: relative; z-index: 1; max-width: 1300px; margin: 0 auto; padding: 2.5rem 2rem; }
+
+    /* ── Stats ────────────────────────────────────────────── */
     .stats {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 1rem;
-      margin-bottom: 2.5rem;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem; margin-bottom: 2.5rem;
     }
 
     .stat-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 1.25rem 1.5rem;
-      position: relative;
-      overflow: hidden;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1.25rem 1.5rem;
+      position: relative; overflow: hidden;
       transition: border-color 0.2s, transform 0.2s;
     }
-
     .stat-card::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0;
-      width: 3px; height: 100%;
+      content: ''; position: absolute; top: 0; left: 0; width: 3px; height: 100%;
     }
-
-    .stat-card.green::before { background: var(--entrada); }
+    .stat-card.green::before  { background: var(--entrada); }
     .stat-card.orange::before { background: var(--saida); }
-    .stat-card.blue::before { background: #4d9eff; }
-    .stat-card.purple::before { background: #a855f7; }
-
+    .stat-card.blue::before   { background: var(--blue); }
+    .stat-card.purple::before { background: var(--purple); }
     .stat-card:hover { transform: translateY(-2px); border-color: var(--muted); }
 
-    .stat-label {
-      font-family: var(--font-mono);
-      font-size: 0.65rem;
-      text-transform: uppercase;
-      letter-spacing: 0.12em;
-      color: var(--text-dim);
-      margin-bottom: 0.5rem;
-    }
-
-    .stat-value {
-      font-family: var(--font-mono);
-      font-size: 1.8rem;
-      font-weight: 700;
-      line-height: 1;
-    }
-
-    .stat-card.green .stat-value { color: var(--entrada); }
+    .stat-label { font-family: var(--font-mono); font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-dim); margin-bottom: 0.5rem; }
+    .stat-value { font-family: var(--font-mono); font-size: 1.8rem; font-weight: 700; line-height: 1; }
+    .stat-card.green  .stat-value { color: var(--entrada); }
     .stat-card.orange .stat-value { color: var(--saida); }
-    .stat-card.blue .stat-value { color: #4d9eff; }
-    .stat-card.purple .stat-value { color: #a855f7; }
+    .stat-card.blue   .stat-value { color: var(--blue); }
+    .stat-card.purple .stat-value { color: var(--purple); }
 
-    /* ── Section header ──────────────────────────────────── */
+    /* ── Pages ────────────────────────────────────────────── */
+    .page { display: none; }
+    .page.active { display: block; animation: fadeIn 0.25s ease; }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+
+    /* ── Section header ───────────────────────────────────── */
     .section-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 1.25rem;
-      gap: 1rem;
-      flex-wrap: wrap;
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 1.25rem; gap: 1rem; flex-wrap: wrap;
     }
 
     .section-title {
-      font-family: var(--font-sans);
-      font-weight: 800;
-      font-size: 0.8rem;
-      text-transform: uppercase;
-      letter-spacing: 0.15em;
-      color: var(--text-dim);
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
+      font-family: var(--font-sans); font-weight: 800; font-size: 0.8rem;
+      text-transform: uppercase; letter-spacing: 0.15em; color: var(--text-dim);
+      display: flex; align-items: center; gap: 0.5rem;
     }
+    .section-title::before { content:''; display:block; width:20px; height:2px; background:var(--accent); }
 
-    .section-title::before {
-      content: '';
-      display: block;
-      width: 20px;
-      height: 2px;
-      background: var(--accent);
-    }
-
-    .filter-bar {
-      display: flex;
-      gap: 0.5rem;
-      flex-wrap: wrap;
-    }
+    .filter-bar { display: flex; gap: 0.5rem; flex-wrap: wrap; }
 
     .filter-btn {
-      background: transparent;
-      border: 1px solid var(--border);
-      color: var(--text-dim);
-      padding: 0.35rem 0.8rem;
-      border-radius: 999px;
-      font-family: var(--font-mono);
-      font-size: 0.65rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      cursor: pointer;
-      transition: all 0.2s;
+      background: transparent; border: 1px solid var(--border);
+      color: var(--text-dim); padding: 0.35rem 0.8rem; border-radius: 999px;
+      font-family: var(--font-mono); font-size: 0.65rem; text-transform: uppercase;
+      letter-spacing: 0.08em; cursor: pointer; transition: all 0.2s;
     }
+    .filter-btn:hover, .filter-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(0,255,148,0.06); }
+    .filter-btn.active-saida { border-color: var(--saida); color: var(--saida); background: rgba(255,107,53,0.06); }
 
-    .filter-btn:hover, .filter-btn.active {
-      border-color: var(--accent);
-      color: var(--accent);
-      background: rgba(0,255,148,0.06);
-    }
+    /* ── Table ────────────────────────────────────────────── */
+    .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
 
-    .filter-btn.active-saida {
-      border-color: var(--saida);
-      color: var(--saida);
-      background: rgba(255,107,53,0.06);
-    }
+    table { width: 100%; border-collapse: collapse; }
 
-    /* ── Table ───────────────────────────────────────────── */
-    .table-wrap {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      overflow: hidden;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-
-    thead {
-      background: rgba(30,30,46,0.8);
-      border-bottom: 1px solid var(--border);
-    }
+    thead { background: rgba(30,30,46,0.8); border-bottom: 1px solid var(--border); }
 
     th {
-      font-family: var(--font-mono);
-      font-size: 0.62rem;
-      text-transform: uppercase;
-      letter-spacing: 0.12em;
-      color: var(--text-dim);
-      padding: 0.85rem 1.25rem;
-      text-align: left;
-      white-space: nowrap;
+      font-family: var(--font-mono); font-size: 0.62rem; text-transform: uppercase;
+      letter-spacing: 0.12em; color: var(--text-dim); padding: 0.85rem 1.25rem;
+      text-align: left; white-space: nowrap;
     }
 
-    tbody tr {
-      border-bottom: 1px solid rgba(30,30,46,0.6);
-      transition: background 0.15s;
-      animation: rowIn 0.3s ease both;
-    }
-
-    @keyframes rowIn {
-      from { opacity: 0; transform: translateX(-8px); }
-      to   { opacity: 1; transform: translateX(0); }
-    }
-
+    tbody tr { border-bottom: 1px solid rgba(30,30,46,0.6); transition: background 0.15s; animation: rowIn 0.3s ease both; }
+    @keyframes rowIn { from { opacity:0; transform:translateX(-8px); } to { opacity:1; transform:translateX(0); } }
     tbody tr:hover { background: rgba(255,255,255,0.025); }
     tbody tr:last-child { border-bottom: none; }
 
-    td {
-      padding: 1rem 1.25rem;
-      font-size: 0.88rem;
-      vertical-align: middle;
-    }
+    td { padding: 1rem 1.25rem; font-size: 0.88rem; vertical-align: middle; }
 
-    .td-id {
-      font-family: var(--font-mono);
-      font-size: 0.7rem;
-      color: var(--text-dim);
-    }
+    .td-id { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); }
 
-    .td-funcionario {
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      gap: 0.6rem;
-    }
+    .td-funcionario { font-weight: 600; display: flex; align-items: center; gap: 0.6rem; }
 
     .avatar {
-      width: 30px;
-      height: 30px;
-      border-radius: 50%;
-      display: grid;
-      place-items: center;
-      font-size: 0.65rem;
-      font-weight: 700;
-      font-family: var(--font-mono);
-      flex-shrink: 0;
-      background: var(--border);
-      color: var(--text-dim);
+      width: 30px; height: 30px; border-radius: 50%;
+      display: grid; place-items: center; font-size: 0.65rem;
+      font-weight: 700; font-family: var(--font-mono); flex-shrink: 0;
+      background: var(--border); color: var(--text-dim);
     }
 
     .badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.3rem;
-      padding: 0.25rem 0.65rem;
-      border-radius: 999px;
-      font-family: var(--font-mono);
-      font-size: 0.65rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
+      display: inline-flex; align-items: center; gap: 0.3rem;
+      padding: 0.25rem 0.65rem; border-radius: 999px;
+      font-family: var(--font-mono); font-size: 0.65rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.08em;
     }
-
-    .badge.entrada {
-      background: rgba(0,255,148,0.1);
-      color: var(--entrada);
-      border: 1px solid rgba(0,255,148,0.25);
-    }
-
-    .badge.saida {
-      background: rgba(255,107,53,0.1);
-      color: var(--saida);
-      border: 1px solid rgba(255,107,53,0.25);
-    }
-
-    .badge-dot {
-      width: 5px; height: 5px;
-      border-radius: 50%;
-    }
-
+    .badge.entrada { background: rgba(0,255,148,0.1); color: var(--entrada); border: 1px solid rgba(0,255,148,0.25); }
+    .badge.saida   { background: rgba(255,107,53,0.1); color: var(--saida);   border: 1px solid rgba(255,107,53,0.25); }
+    .badge-dot { width:5px; height:5px; border-radius:50%; }
     .badge.entrada .badge-dot { background: var(--entrada); }
     .badge.saida   .badge-dot { background: var(--saida); }
 
     .td-produto { font-weight: 600; }
-    .td-produto small {
-      display: block;
-      font-family: var(--font-mono);
-      font-size: 0.65rem;
-      color: var(--text-dim);
-      font-weight: 400;
-      margin-top: 2px;
+    .td-produto small { display:block; font-family:var(--font-mono); font-size:0.65rem; color:var(--text-dim); font-weight:400; margin-top:2px; }
+
+    .td-qtd { font-family: var(--font-mono); font-size: 1rem; font-weight: 700; }
+
+    .td-data { font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-dim); white-space: nowrap; }
+    .td-data span { display:block; color:var(--text); font-size:0.78rem; }
+
+    /* ── Charts grid ──────────────────────────────────────── */
+    .charts-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+      margin-bottom: 1.25rem;
     }
 
-    .td-qtd {
-      font-family: var(--font-mono);
-      font-size: 1rem;
-      font-weight: 700;
+    .charts-grid.full { grid-template-columns: 1fr; }
+
+    .chart-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1.5rem;
     }
 
-    .td-data {
-      font-family: var(--font-mono);
-      font-size: 0.72rem;
-      color: var(--text-dim);
-      white-space: nowrap;
+    .chart-title {
+      font-family: var(--font-mono); font-size: 0.68rem; text-transform: uppercase;
+      letter-spacing: 0.12em; color: var(--text-dim); margin-bottom: 1.25rem;
+      display: flex; align-items: center; justify-content: space-between;
     }
 
-    .td-data span {
-      display: block;
-      color: var(--text);
-      font-size: 0.78rem;
+    .chart-title span { color: var(--text); font-size: 0.75rem; }
+
+    .chart-wrap { position: relative; }
+    .chart-wrap.tall { height: 280px; }
+    .chart-wrap.medium { height: 220px; }
+    .chart-wrap.donut { height: 220px; display: flex; justify-content: center; }
+
+    /* ── Ranking list ─────────────────────────────────────── */
+    .ranking-list { display: flex; flex-direction: column; gap: 0.6rem; }
+
+    .rank-item {
+      display: flex; align-items: center; gap: 0.75rem;
     }
 
-    /* ── Empty state ─────────────────────────────────────── */
-    .empty {
-      padding: 4rem 2rem;
-      text-align: center;
-      color: var(--text-dim);
+    .rank-num {
+      font-family: var(--font-mono); font-size: 0.65rem;
+      color: var(--text-dim); width: 20px; text-align: right; flex-shrink: 0;
     }
 
-    .empty-icon {
-      font-size: 2.5rem;
-      margin-bottom: 1rem;
-      opacity: 0.3;
+    .rank-bar-wrap { flex: 1; }
+
+    .rank-label {
+      font-size: 0.8rem; font-weight: 600; margin-bottom: 3px;
+      display: flex; justify-content: space-between;
     }
 
-    .empty h3 {
-      font-family: var(--font-mono);
-      font-size: 0.8rem;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      margin-bottom: 0.5rem;
-    }
+    .rank-label small { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-dim); font-weight: 400; }
 
+    .rank-bar-bg { background: var(--border); border-radius: 2px; height: 4px; overflow: hidden; }
+
+    .rank-bar { height: 100%; border-radius: 2px; transition: width 0.8s cubic-bezier(0.4,0,0.2,1); }
+
+    /* ── Empty ────────────────────────────────────────────── */
+    .empty { padding: 4rem 2rem; text-align: center; color: var(--text-dim); }
+    .empty-icon { font-size: 2.5rem; margin-bottom: 1rem; opacity: 0.3; }
+    .empty h3 { font-family: var(--font-mono); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.5rem; }
     .empty p { font-size: 0.85rem; }
 
-    /* ── Toast ───────────────────────────────────────────── */
+    /* ── Toast ────────────────────────────────────────────── */
     #toast {
-      position: fixed;
-      bottom: 2rem;
-      right: 2rem;
-      background: var(--surface);
-      border: 1px solid var(--accent);
-      color: var(--accent);
-      padding: 0.75rem 1.25rem;
-      border-radius: var(--radius);
-      font-family: var(--font-mono);
-      font-size: 0.75rem;
-      box-shadow: var(--glow);
-      transform: translateY(120%);
-      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-      z-index: 999;
-      pointer-events: none;
+      position: fixed; bottom: 2rem; right: 2rem;
+      background: var(--surface); border: 1px solid var(--accent);
+      color: var(--accent); padding: 0.75rem 1.25rem; border-radius: var(--radius);
+      font-family: var(--font-mono); font-size: 0.75rem;
+      box-shadow: var(--glow); transform: translateY(120%);
+      transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+      z-index: 999; pointer-events: none;
     }
-
     #toast.show { transform: translateY(0); }
 
-    /* ── Scrollbar ───────────────────────────────────────── */
     ::-webkit-scrollbar { width: 6px; }
     ::-webkit-scrollbar-track { background: var(--bg); }
     ::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 3px; }
 
-    /* ── Responsive ──────────────────────────────────────── */
+    /* ── Responsive ───────────────────────────────────────── */
+    @media (max-width: 900px) {
+      .charts-grid { grid-template-columns: 1fr; }
+    }
+
     @media (max-width: 768px) {
       header { padding: 0 1rem; }
       main { padding: 1.5rem 1rem; }
-
       .logo-text { font-size: 0.95rem; }
-
-      th:nth-child(1),
-      td:nth-child(1) { display: none; }
-
-      th:nth-child(5),
-      td:nth-child(5) { display: none; }
-
+      .nav-tabs { display: none; }
+      th:nth-child(1), td:nth-child(1) { display: none; }
+      th:nth-child(5), td:nth-child(5) { display: none; }
       td { padding: 0.75rem 0.85rem; }
       th { padding: 0.75rem 0.85rem; }
     }
 
     @media (max-width: 480px) {
       .stats { grid-template-columns: 1fr 1fr; }
-
-      th:nth-child(3),
-      td:nth-child(3) { display: none; }
+      th:nth-child(3), td:nth-child(3) { display: none; }
     }
   </style>
 </head>
@@ -504,11 +343,18 @@
   </div>
 
   <div class="header-right">
+    <!-- Navegação entre páginas -->
+    <div class="nav-tabs">
+      <button class="nav-tab active" onclick="setPage('historico')">Histórico</button>
+      <button class="nav-tab"        onclick="setPage('dashboard')">Dashboard</button>
+    </div>
+
     <div class="status-dot">
       <div class="dot" id="statusDot"></div>
       <span id="statusText">Verificando...</span>
     </div>
-    <button class="btn-refresh" id="btnRefresh" onclick="carregarDados()">
+
+    <button class="btn" id="btnRefresh" onclick="carregarDados()">
       <svg id="refreshIcon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
         <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
         <path d="M21 3v5h-5"/>
@@ -523,7 +369,7 @@
 <!-- ── Main ───────────────────────────────────────────────── -->
 <main>
 
-  <!-- Stats -->
+  <!-- Stats (ambas as páginas) -->
   <div class="stats">
     <div class="stat-card green">
       <div class="stat-label">Entradas</div>
@@ -543,187 +389,424 @@
     </div>
   </div>
 
-  <!-- Table header -->
-  <div class="section-header">
-    <div class="section-title">Histórico de Movimentações</div>
-    <div class="filter-bar">
-      <button class="filter-btn active" id="filtroTodos"    onclick="setFiltro('todos')">Todos</button>
-      <button class="filter-btn"        id="filtroEntrada"  onclick="setFiltro('entrada')">Entradas</button>
-      <button class="filter-btn"        id="filtroSaida"    onclick="setFiltro('saida')">Saídas</button>
+  <!-- ── Página: Histórico ──────────────────────────────── -->
+  <div class="page active" id="page-historico">
+    <div class="section-header">
+      <div class="section-title">Histórico de Movimentações</div>
+      <div class="filter-bar">
+        <button class="filter-btn active" id="filtroTodos"   onclick="setFiltro('todos')">Todos</button>
+        <button class="filter-btn"        id="filtroEntrada" onclick="setFiltro('entrada')">Entradas</button>
+        <button class="filter-btn"        id="filtroSaida"   onclick="setFiltro('saida')">Saídas</button>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Funcionário</th>
+            <th>Ação</th>
+            <th>Produto</th>
+            <th>Qtd</th>
+            <th>Data / Hora</th>
+          </tr>
+        </thead>
+        <tbody id="tbody">
+          <tr><td colspan="6"><div class="empty"><div class="empty-icon">⟳</div><h3>Carregando...</h3></div></td></tr>
+        </tbody>
+      </table>
     </div>
   </div>
 
-  <!-- Table -->
-  <div class="table-wrap">
-    <table>
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>Funcionário</th>
-          <th>Ação</th>
-          <th>Produto</th>
-          <th>Qtd</th>
-          <th>Data / Hora</th>
-        </tr>
-      </thead>
-      <tbody id="tbody">
-        <tr>
-          <td colspan="6">
-            <div class="empty">
-              <div class="empty-icon">⟳</div>
-              <h3>Carregando...</h3>
-            </div>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
+  <!-- ── Página: Dashboard ─────────────────────────────── -->
+  <div class="page" id="page-dashboard">
+
+    <!-- Linha 1: Barras por produto + Donut de distribuição -->
+    <div class="charts-grid">
+      <div class="chart-card">
+        <div class="chart-title">
+          Entradas vs Saídas por Produto
+          <span id="lblTotalProdutos"></span>
+        </div>
+        <div class="chart-wrap tall">
+          <canvas id="chartProdutos"></canvas>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-title">Distribuição de Ações</div>
+        <div class="chart-wrap donut">
+          <canvas id="chartDonut" style="max-width:220px"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Linha 2: Movimentações ao longo do tempo -->
+    <div class="charts-grid full" style="margin-bottom:1.25rem">
+      <div class="chart-card">
+        <div class="chart-title">
+          Movimentações ao Longo do Tempo
+          <span id="lblPeriodo"></span>
+        </div>
+        <div class="chart-wrap tall">
+          <canvas id="chartTempo"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Linha 3: Ranking de produtos + Ranking de funcionários -->
+    <div class="charts-grid">
+      <div class="chart-card">
+        <div class="chart-title">Produtos Mais Movimentados</div>
+        <div id="rankingProdutos" class="ranking-list"></div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-title">Funcionários Mais Ativos</div>
+        <div id="rankingFuncionarios" class="ranking-list"></div>
+      </div>
+    </div>
+
+  </div><!-- /page-dashboard -->
 
 </main>
 
-<!-- Toast -->
 <div id="toast"></div>
 
 <script>
   // ── Config ──────────────────────────────────────────────
-  // Troque pelo endereço da sua API (ngrok ou IP local)
   const API_BASE = 'http://127.0.0.1:8000';
 
   let todosRegistros = [];
   let filtroAtual    = 'todos';
-  let autoRefresh    = null;
+  let paginaAtual    = 'historico';
+
+  // Instâncias dos gráficos
+  let chartProdutos = null;
+  let chartDonut    = null;
+  let chartTempo    = null;
+
+  // Defaults do Chart.js para tema escuro
+  Chart.defaults.color          = '#6b6b8a';
+  Chart.defaults.borderColor    = '#1e1e2e';
+  Chart.defaults.font.family    = "'Space Mono', monospace";
+  Chart.defaults.font.size      = 11;
 
   // ── Inicialização ────────────────────────────────────────
   carregarDados();
-  autoRefresh = setInterval(carregarDados, 5000); // atualiza a cada 5s
+  setInterval(carregarDados, 5000);
 
-  // ── Carrega dados da API ─────────────────────────────────
+  // ── Navegação entre páginas ──────────────────────────────
+  function setPage(p) {
+    paginaAtual = p;
+    document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
+    document.getElementById('page-' + p).classList.add('active');
+    document.querySelectorAll('.nav-tab').forEach(el => {
+      if (el.textContent.toLowerCase().includes(p === 'historico' ? 'hist' : 'dash'))
+        el.classList.add('active');
+    });
+    if (p === 'dashboard') renderDashboard(todosRegistros);
+  }
+
+  // ── Carrega dados ────────────────────────────────────────
   async function carregarDados() {
-    const btn  = document.getElementById('btnRefresh');
-    const icon = document.getElementById('refreshIcon');
+    const btn = document.getElementById('btnRefresh');
     btn.classList.add('loading');
-
     try {
-      const [movRes, statusRes] = await Promise.all([
+      const [movRes, stRes] = await Promise.all([
         fetch(`${API_BASE}/movimentacoes`),
         fetch(`${API_BASE}/status`),
       ]);
-
-      if (!movRes.ok) throw new Error('Erro na API');
-
+      if (!movRes.ok) throw new Error('Erro');
       todosRegistros = await movRes.json();
-      const status   = await statusRes.json();
-
       atualizarStatus(true);
       atualizarStats(todosRegistros);
       renderTabela(todosRegistros, filtroAtual);
-
-    } catch (err) {
+      if (paginaAtual === 'dashboard') renderDashboard(todosRegistros);
+    } catch {
       atualizarStatus(false);
-      console.error(err);
     } finally {
       btn.classList.remove('loading');
     }
   }
 
-  // ── Status online/offline ────────────────────────────────
+  // ── Status ───────────────────────────────────────────────
   function atualizarStatus(online) {
-    const dot  = document.getElementById('statusDot');
-    const text = document.getElementById('statusText');
-    dot.className  = 'dot ' + (online ? 'online' : 'offline');
-    text.textContent = online ? 'API Online' : 'API Offline';
+    document.getElementById('statusDot').className  = 'dot ' + (online ? 'online' : 'offline');
+    document.getElementById('statusText').textContent = online ? 'API Online' : 'API Offline';
   }
 
-  // ── Atualiza cards de stats ──────────────────────────────
-  function atualizarStats(registros) {
-    const entradas     = registros.filter(r => r.acao === 'entrada').length;
-    const saidas       = registros.filter(r => r.acao === 'saida').length;
-    const funcionarios = new Set(registros.map(r => r.funcionario_id)).size;
-
-    animarNumero('statEntradas',    entradas);
-    animarNumero('statSaidas',      saidas);
-    animarNumero('statTotal',       registros.length);
-    animarNumero('statFuncionarios', funcionarios);
+  // ── Stats cards ──────────────────────────────────────────
+  function atualizarStats(r) {
+    animarNumero('statEntradas',     r.filter(x => x.acao === 'entrada').length);
+    animarNumero('statSaidas',       r.filter(x => x.acao === 'saida').length);
+    animarNumero('statTotal',        r.length);
+    animarNumero('statFuncionarios', new Set(r.map(x => x.funcionario_id)).size);
   }
 
   function animarNumero(id, valor) {
-    const el  = document.getElementById(id);
+    const el = document.getElementById(id);
     const ini = parseInt(el.textContent) || 0;
-    const dur = 400;
-    const ini_t = performance.now();
+    const dur = 400, t0 = performance.now();
     function step(now) {
-      const t = Math.min((now - ini_t) / dur, 1);
+      const t = Math.min((now - t0) / dur, 1);
       el.textContent = Math.round(ini + (valor - ini) * t);
       if (t < 1) requestAnimationFrame(step);
     }
     requestAnimationFrame(step);
   }
 
-  // ── Filtro ───────────────────────────────────────────────
+  // ── Filtro tabela ────────────────────────────────────────
   function setFiltro(f) {
     filtroAtual = f;
-    document.querySelectorAll('.filter-btn').forEach(b => {
-      b.classList.remove('active', 'active-saida');
-    });
-    const btn = document.getElementById(
-      f === 'todos' ? 'filtroTodos' : f === 'entrada' ? 'filtroEntrada' : 'filtroSaida'
-    );
-    btn.classList.add(f === 'saida' ? 'active-saida' : 'active');
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active','active-saida'));
+    const ids = { todos:'filtroTodos', entrada:'filtroEntrada', saida:'filtroSaida' };
+    document.getElementById(ids[f]).classList.add(f === 'saida' ? 'active-saida' : 'active');
     renderTabela(todosRegistros, f);
   }
 
-  // ── Renderiza tabela ─────────────────────────────────────
+  // ── Tabela ───────────────────────────────────────────────
   function renderTabela(registros, filtro) {
     const tbody = document.getElementById('tbody');
-    const dados = filtro === 'todos'
-      ? registros
-      : registros.filter(r => r.acao === filtro);
-
-    if (dados.length === 0) {
-      tbody.innerHTML = `
-        <tr><td colspan="6">
-          <div class="empty">
-            <div class="empty-icon">◎</div>
-            <h3>Nenhum registro</h3>
-            <p>Aguardando movimentações do ESP32...</p>
-          </div>
-        </td></tr>`;
+    const dados = filtro === 'todos' ? registros : registros.filter(r => r.acao === filtro);
+    if (!dados.length) {
+      tbody.innerHTML = `<tr><td colspan="6"><div class="empty"><div class="empty-icon">◎</div><h3>Nenhum registro</h3><p>Aguardando movimentações do ESP32...</p></div></td></tr>`;
       return;
     }
-
     tbody.innerHTML = dados.map((r, i) => {
-      const dt       = new Date(r.data_hora);
-      const data     = dt.toLocaleDateString('pt-BR');
-      const hora     = dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-      const initials = r.funcionario_nome.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase();
-
-      return `
-        <tr style="animation-delay:${i * 30}ms">
-          <td class="td-id">#${String(r.id).padStart(4,'0')}</td>
-          <td>
-            <div class="td-funcionario">
-              <div class="avatar">${initials}</div>
-              ${r.funcionario_nome}
-            </div>
-          </td>
-          <td>
-            <span class="badge ${r.acao}">
-              <span class="badge-dot"></span>
-              ${r.acao === 'entrada' ? 'Entrada' : 'Saída'}
-            </span>
-          </td>
-          <td class="td-produto">
-            ${r.produto_nome}
-            <small>ID ${r.produto_id} · ${r.produto_unidade}</small>
-          </td>
-          <td class="td-qtd" style="color:${r.acao==='entrada'?'var(--entrada)':'var(--saida)'}">
-            ${r.quantidade}
-          </td>
-          <td class="td-data">
-            <span>${hora}</span>${data}
-          </td>
-        </tr>`;
+      const dt   = new Date(r.data_hora);
+      const data = dt.toLocaleDateString('pt-BR');
+      const hora = dt.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+      const ini  = r.funcionario_nome.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase();
+      return `<tr style="animation-delay:${i*30}ms">
+        <td class="td-id">#${String(r.id).padStart(4,'0')}</td>
+        <td><div class="td-funcionario"><div class="avatar">${ini}</div>${r.funcionario_nome}</div></td>
+        <td><span class="badge ${r.acao}"><span class="badge-dot"></span>${r.acao === 'entrada' ? 'Entrada' : 'Saída'}</span></td>
+        <td class="td-produto">${r.produto_nome}<small>ID ${r.produto_id} · ${r.produto_unidade}</small></td>
+        <td class="td-qtd" style="color:${r.acao==='entrada'?'var(--entrada)':'var(--saida)'}">${r.quantidade}</td>
+        <td class="td-data"><span>${hora}</span>${data}</td>
+      </tr>`;
     }).join('');
+  }
+
+  // ════════════════════════════════════════════════════════
+  // ── Dashboard ────────────────────────────────────────────
+  // ════════════════════════════════════════════════════════
+  function renderDashboard(registros) {
+    if (!registros.length) return;
+    renderChartProdutos(registros);
+    renderChartDonut(registros);
+    renderChartTempo(registros);
+    renderRankingProdutos(registros);
+    renderRankingFuncionarios(registros);
+  }
+
+  // ── 1. Barras: entradas vs saídas por produto ─────────────
+  function renderChartProdutos(registros) {
+    // Agrupa por produto
+    const mapa = {};
+    registros.forEach(r => {
+      if (!mapa[r.produto_nome]) mapa[r.produto_nome] = { entrada: 0, saida: 0 };
+      mapa[r.produto_nome][r.acao] += r.quantidade;
+    });
+
+    const labels   = Object.keys(mapa);
+    const entradas = labels.map(l => mapa[l].entrada);
+    const saidas   = labels.map(l => mapa[l].saida);
+
+    document.getElementById('lblTotalProdutos').textContent = `${labels.length} produto${labels.length !== 1 ? 's' : ''}`;
+
+    const ctx = document.getElementById('chartProdutos').getContext('2d');
+    if (chartProdutos) chartProdutos.destroy();
+
+    chartProdutos = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'Entradas',
+            data: entradas,
+            backgroundColor: 'rgba(0,255,148,0.7)',
+            borderColor: '#00ff94',
+            borderWidth: 1,
+            borderRadius: 3,
+          },
+          {
+            label: 'Saídas',
+            data: saidas,
+            backgroundColor: 'rgba(255,107,53,0.7)',
+            borderColor: '#ff6b35',
+            borderWidth: 1,
+            borderRadius: 3,
+          }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { labels: { color: '#6b6b8a', boxWidth: 12, padding: 16 } },
+          tooltip: { backgroundColor: '#111118', borderColor: '#1e1e2e', borderWidth: 1 }
+        },
+        scales: {
+          x: { grid: { color: 'rgba(30,30,46,0.8)' }, ticks: { maxRotation: 30 } },
+          y: { grid: { color: 'rgba(30,30,46,0.8)' }, beginAtZero: true }
+        }
+      }
+    });
+  }
+
+  // ── 2. Donut: distribuição entrada/saída ──────────────────
+  function renderChartDonut(registros) {
+    const entradas = registros.filter(r => r.acao === 'entrada').length;
+    const saidas   = registros.filter(r => r.acao === 'saida').length;
+
+    const ctx = document.getElementById('chartDonut').getContext('2d');
+    if (chartDonut) chartDonut.destroy();
+
+    chartDonut = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Entradas', 'Saídas'],
+        datasets: [{
+          data: [entradas, saidas],
+          backgroundColor: ['rgba(0,255,148,0.8)', 'rgba(255,107,53,0.8)'],
+          borderColor: ['#00ff94', '#ff6b35'],
+          borderWidth: 2,
+          hoverOffset: 6,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        cutout: '68%',
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: { color: '#e8e8f0', padding: 16, boxWidth: 12 }
+          },
+          tooltip: { backgroundColor: '#111118', borderColor: '#1e1e2e', borderWidth: 1 }
+        }
+      }
+    });
+  }
+
+  // ── 3. Linha: movimentações ao longo do tempo ─────────────
+  function renderChartTempo(registros) {
+    // Agrupa por data
+    const mapa = {};
+    registros.forEach(r => {
+      const dia = new Date(r.data_hora).toLocaleDateString('pt-BR');
+      if (!mapa[dia]) mapa[dia] = { entrada: 0, saida: 0 };
+      mapa[dia][r.acao]++;
+    });
+
+    // Ordena por data
+    const labels = Object.keys(mapa).sort((a, b) => {
+      const [da, ma, aa] = a.split('/').map(Number);
+      const [db, mb, ab] = b.split('/').map(Number);
+      return new Date(aa, ma-1, da) - new Date(ab, mb-1, db);
+    });
+
+    document.getElementById('lblPeriodo').textContent =
+      labels.length > 1 ? `${labels[0]} — ${labels[labels.length-1]}` : labels[0] || '';
+
+    const ctx = document.getElementById('chartTempo').getContext('2d');
+    if (chartTempo) chartTempo.destroy();
+
+    chartTempo = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'Entradas',
+            data: labels.map(l => mapa[l].entrada),
+            borderColor: '#00ff94',
+            backgroundColor: 'rgba(0,255,148,0.08)',
+            borderWidth: 2,
+            pointBackgroundColor: '#00ff94',
+            pointRadius: 4,
+            tension: 0.4,
+            fill: true,
+          },
+          {
+            label: 'Saídas',
+            data: labels.map(l => mapa[l].saida),
+            borderColor: '#ff6b35',
+            backgroundColor: 'rgba(255,107,53,0.08)',
+            borderWidth: 2,
+            pointBackgroundColor: '#ff6b35',
+            pointRadius: 4,
+            tension: 0.4,
+            fill: true,
+          }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { labels: { color: '#6b6b8a', boxWidth: 12, padding: 16 } },
+          tooltip: { backgroundColor: '#111118', borderColor: '#1e1e2e', borderWidth: 1, mode: 'index', intersect: false }
+        },
+        scales: {
+          x: { grid: { color: 'rgba(30,30,46,0.8)' } },
+          y: { grid: { color: 'rgba(30,30,46,0.8)' }, beginAtZero: true, ticks: { stepSize: 1 } }
+        }
+      }
+    });
+  }
+
+  // ── 4. Ranking de produtos ────────────────────────────────
+  function renderRankingProdutos(registros) {
+    const mapa = {};
+    registros.forEach(r => {
+      mapa[r.produto_nome] = (mapa[r.produto_nome] || 0) + r.quantidade;
+    });
+
+    const sorted = Object.entries(mapa).sort((a,b) => b[1]-a[1]).slice(0, 6);
+    const max    = sorted[0]?.[1] || 1;
+
+    document.getElementById('rankingProdutos').innerHTML = sorted.map(([nome, qtd], i) => `
+      <div class="rank-item">
+        <div class="rank-num">${i+1}</div>
+        <div class="rank-bar-wrap">
+          <div class="rank-label">
+            ${nome}
+            <small>${qtd} un.</small>
+          </div>
+          <div class="rank-bar-bg">
+            <div class="rank-bar" style="width:${(qtd/max*100).toFixed(1)}%;background:var(--accent)"></div>
+          </div>
+        </div>
+      </div>`).join('');
+  }
+
+  // ── 5. Ranking de funcionários ────────────────────────────
+  function renderRankingFuncionarios(registros) {
+    const mapa = {};
+    registros.forEach(r => {
+      mapa[r.funcionario_nome] = (mapa[r.funcionario_nome] || 0) + 1;
+    });
+
+    const sorted = Object.entries(mapa).sort((a,b) => b[1]-a[1]);
+    const max    = sorted[0]?.[1] || 1;
+    const cores  = ['var(--accent)', 'var(--blue)', 'var(--purple)', 'var(--saida)', '#facc15'];
+
+    document.getElementById('rankingFuncionarios').innerHTML = sorted.map(([nome, qtd], i) => `
+      <div class="rank-item">
+        <div class="rank-num">${i+1}</div>
+        <div class="rank-bar-wrap">
+          <div class="rank-label">
+            ${nome}
+            <small>${qtd} mov.</small>
+          </div>
+          <div class="rank-bar-bg">
+            <div class="rank-bar" style="width:${(qtd/max*100).toFixed(1)}%;background:${cores[i]||'var(--muted)'}"></div>
+          </div>
+        </div>
+      </div>`).join('');
   }
 
   // ── Toast ────────────────────────────────────────────────
@@ -734,15 +817,11 @@
     setTimeout(() => t.classList.remove('show'), 2500);
   }
 
-  // Notifica quando chega nova movimentação
-  let ultimoId = null;
-  setInterval(async () => {
-    if (todosRegistros.length === 0) return;
-    const novoId = todosRegistros[0]?.id;
-    if (ultimoId !== null && novoId !== ultimoId) {
-      showToast(`↗ Nova movimentação registrada`);
-    }
-    ultimoId = novoId;
+  let ultimoTotal = null;
+  setInterval(() => {
+    if (ultimoTotal !== null && todosRegistros.length > ultimoTotal)
+      showToast('↗ Nova movimentação registrada');
+    ultimoTotal = todosRegistros.length;
   }, 5000);
 </script>
 </body>

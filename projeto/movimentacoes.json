@@ -20,5 +20,137 @@
     "produto_unidade": "mts",
     "quantidade": 6,
     "data_hora": "2026-05-01T20:18:02"
+  },
+  {
+    "id": 3,
+    "funcionario_id": 5,
+    "funcionario_nome": "Eva Rocha",
+    "acao": "entrada",
+    "produto_id": 1,
+    "produto_nome": "Parafuso M6",
+    "produto_unidade": "pcs",
+    "quantidade": 94,
+    "data_hora": "2026-05-10T19:01:12"
+  },
+  {
+    "id": 4,
+    "funcionario_id": 3,
+    "funcionario_nome": "Carla Dias",
+    "acao": "saida",
+    "produto_id": 7,
+    "produto_nome": "Fio Terra 2.5",
+    "produto_unidade": "mts",
+    "quantidade": 36,
+    "data_hora": "2026-05-10T19:02:05"
+  },
+  {
+    "id": 5,
+    "funcionario_id": 5,
+    "funcionario_nome": "Eva Rocha",
+    "acao": "saida",
+    "produto_id": 2,
+    "produto_nome": "Cimento CP-II",
+    "produto_unidade": "sac",
+    "quantidade": 478,
+    "data_hora": "2026-05-10T19:02:27"
+  },
+  {
+    "id": 6,
+    "funcionario_id": 1,
+    "funcionario_nome": "Ana Lima",
+    "acao": "saida",
+    "produto_id": 4,
+    "produto_nome": "Tinta Látex",
+    "produto_unidade": "lts",
+    "quantidade": 369,
+    "data_hora": "2026-05-10T19:02:41"
+  },
+  {
+    "id": 7,
+    "funcionario_id": 3,
+    "funcionario_nome": "Carla Dias",
+    "acao": "saida",
+    "produto_id": 3,
+    "produto_nome": "Cabo Elétrico",
+    "produto_unidade": "mts",
+    "quantidade": 851,
+    "data_hora": "2026-05-10T19:03:35"
+  },
+  {
+    "id": 8,
+    "funcionario_id": 3,
+    "funcionario_nome": "Carla Dias",
+    "acao": "entrada",
+    "produto_id": 4,
+    "produto_nome": "Tinta Látex",
+    "produto_unidade": "lts",
+    "quantidade": 123,
+    "data_hora": "2026-05-10T19:04:03"
+  },
+  {
+    "id": 9,
+    "funcionario_id": 1,
+    "funcionario_nome": "Ana Lima",
+    "acao": "entrada",
+    "produto_id": 5,
+    "produto_nome": "Tubo PVC 1/2",
+    "produto_unidade": "pcs",
+    "quantidade": 4,
+    "data_hora": "2026-05-10T19:05:17"
+  },
+  {
+    "id": 10,
+    "funcionario_id": 1,
+    "funcionario_nome": "Ana Lima",
+    "acao": "saida",
+    "produto_id": 6,
+    "produto_nome": "Rolo de Lixa",
+    "produto_unidade": "pcs",
+    "quantidade": 580,
+    "data_hora": "2026-05-10T19:07:33"
+  },
+  {
+    "id": 11,
+    "funcionario_id": 4,
+    "funcionario_nome": "Diego Nunes",
+    "acao": "entrada",
+    "produto_id": 7,
+    "produto_nome": "Fio Terra 2.5",
+    "produto_unidade": "mts",
+    "quantidade": 980,
+    "data_hora": "2026-05-10T19:11:44"
+  },
+  {
+    "id": 12,
+    "funcionario_id": 3,
+    "funcionario_nome": "Carla Dias",
+    "acao": "entrada",
+    "produto_id": 4,
+    "produto_nome": "Tinta Látex",
+    "produto_unidade": "lts",
+    "quantidade": 6,
+    "data_hora": "2026-05-10T19:12:09"
+  },
+  {
+    "id": 13,
+    "funcionario_id": 5,
+    "funcionario_nome": "Eva Rocha",
+    "acao": "entrada",
+    "produto_id": 2,
+    "produto_nome": "Cimento CP-II",
+    "produto_unidade": "sac",
+    "quantidade": 45,
+    "data_hora": "2026-05-10T19:12:24"
+  },
+  {
+    "id": 14,
+    "funcionario_id": 5,
+    "funcionario_nome": "Eva Rocha",
+    "acao": "saida",
+    "produto_id": 6,
+    "produto_nome": "Rolo de Lixa",
+    "produto_unidade": "pcs",
+    "quantidade": 458,
+    "data_hora": "2026-05-10T19:12:46"
   }
 ]
